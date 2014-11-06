@@ -17,13 +17,21 @@ public class Main {
 
         Connection c = new Connection(matchToken, serverIP);
 
+        //TODO
+        /*
+            - Make CommandChannel repeatedly check queue for new commands and issue those commands in order
+
+            - Make parser for StateChannel
+                - once we have the board state how do we want to proceed?
+                - check the board state everytime there is an update?
+
+            - Create a new class or use the Connection class to make decisions {movements, attacks, rotations}
+
+            - Make functions for attacking, rotating, moving, etc.. with the proper parameters and enqueues itself
+         */
+
+
+
         System.out.println("done!");
-        //Establish request/response ZMQ connection to central game channel (command channel)
-        //Context context = ZMQ.context(1);
-        //ZMQ.Socket channel = context.socket(ZMQ.REQ);
-
-
-        //Establish pub/sub ZMQ connection to central game channel (state channel)
-        //Socket publisher = context.socket(ZMQ.PUB);
     }
 }

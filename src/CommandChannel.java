@@ -38,6 +38,9 @@ public class CommandChannel implements Runnable {
             e.printStackTrace();
             System.exit(1);
         }
+
+        //Put below in while loop?
+
         //System.out.println("matchconnect: " + matchconnect.toString());
         channel.send(matchconnect.toString().getBytes(), 0);
         String r = new String(channel.recv(0));
@@ -57,8 +60,22 @@ public class CommandChannel implements Runnable {
 
         //Now in our thread, we should loop forever checking for any JSON commands in the queue
         //while(true){
-        //  //execute command
+          //get next command from q
+          //execute command
+            //if(q.isEmpty()) {...}
         //}
+        /*JSONObject shoot = null;
+        try {
+         //    shoot.put("tankID", tankID); // need tankID from StateChannel
+             shoot.put("comm_type", "FIRE");
+             shoot.put("client_token", clientToken);
+
+             q.add(shoot.toString().getBytes());
+        }
+        catch (JSONException e) {
+            e.printStackTrace();
+        }
+        */
 
     }
 
