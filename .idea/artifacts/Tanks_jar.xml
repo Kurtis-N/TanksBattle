@@ -1,0 +1,10 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="Tanks:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/Tanks_jar</output-path>
+    <root id="archive" name="Tanks.jar">
+      <element id="module-output" name="Tanks" />
+      <element id="extracted-dir" path="$USER_HOME$/Documents/java-json.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="/usr/local/share/java/zmq.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>
