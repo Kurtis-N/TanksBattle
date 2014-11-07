@@ -58,25 +58,34 @@ public class CommandChannel implements Runnable {
             System.exit(2);
         }
 
-        //Now in our thread, we should loop forever checking for any JSON commands in the queue
-        //while(true){
-          //get next command from q
-          //execute command
-            //if(q.isEmpty()) {...}
-        //}
-        /*JSONObject shoot = null;
-        try {
-         //    shoot.put("tankID", tankID); // need tankID from StateChannel
-             shoot.put("comm_type", "FIRE");
-             shoot.put("client_token", clientToken);
+        //get next command from q, execute command
+        while(true){
 
-             q.add(shoot.toString().getBytes());
+            if(checkEmpty()) {
+                //half a second sleep
+                try {
+                    Thread.sleep(500);
+                }
+                catch(InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            else
+                sendCommand();
         }
-        catch (JSONException e) {
-            e.printStackTrace();
-        }
-        */
+    }
 
+    //it is not possible for two invocations of synchronized methods on the same object to interleave
+    //we'll have another thread writing to the queue?
+    public synchronized boolean checkEmpty() {
+        if(q.isEmpty())
+            return true;
+        return false;
+    }
+
+    public synchronized void sendCommand() {
+        //get JSON object
+        //channel.send(obj.getBytes(), 0);
     }
 
 }

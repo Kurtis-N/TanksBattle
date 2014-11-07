@@ -1,9 +1,12 @@
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.zeromq.ZMQ;
 
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by kurtisniedling on 2014-11-05.
@@ -38,17 +41,40 @@ public class StateChannel implements Runnable{
             System.out.println(msg);
             //check if m is equal to the match token, just ignore?
             msg.replace(matchToken, "");
+            parseMessage(msg);
 
-            JSONObject resp = null;
-            try {
-                resp = new JSONObject(msg);
-                System.out.println(resp.toString());
-            }
-            catch (JSONException e) {
-                //should do something here?
-                e.printStackTrace();
-            }
         }
+    }
+
+    public void parseMessage(String msg) {
+        try {
+            JSONObject resp = new JSONObject(msg);
+            //JSONObject players = new JSONObject(resp.getString("players"));
+            //System.out.println(players.toString());
+
+            JSONArray players = (JSONArray) resp.get("players");
+            List<String> tankIds = new ArrayList<String>();
+            for(int i = 0; i < players.length(); i++) {
+                JSONObject p = new JSONObject(players.get(i).toString());
+                if(p.get("name").equals("Tanks But No Tanks")) {
+                    JSONArray tanks = (JSONArray) p.get("tanks");
+                    for(int j = 0; j < tanks.length(); j++) {
+                        JSONObject tank = new JSONObject(tanks.get(i).toString());
+                        tankIds.add(tank.get("id").toString());
+                    }
+                }
+            }
+            System.out.println("tankIds: ");
+            for(String s : tankIds) {
+                System.out.println(s);
+            }
+
+
+        }
+        catch (JSONException e) {
+            e.printStackTrace();
+        }
+
 
     }
 }
