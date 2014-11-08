@@ -44,7 +44,7 @@ public class CommandChannel implements Runnable {
         //System.out.println("matchconnect: " + matchconnect.toString());
         channel.send(matchconnect.toString().getBytes(), 0);
         String r = new String(channel.recv(0));
-        System.out.println("response: " + r);
+        //System.out.println("response: " + r);
 
         JSONObject resp = null;
         try {
@@ -83,9 +83,25 @@ public class CommandChannel implements Runnable {
         return false;
     }
 
+    public synchronized void addToQueue(JSONObject s) {
+        q.add(s);
+    }
+
     public synchronized void sendCommand() {
-        //get JSON object
-        //channel.send(obj.getBytes(), 0);
+        JSONObject c = q.poll();
+        channel.send(c.toString().getBytes(), 0);
+        String r = new String(channel.recv(0));
+        JSONObject resp = null;
+        try {
+            resp = new JSONObject(r);
+            if(resp.getString("comm_type").equals("MatchConnectResp")){
+                clientToken = resp.getString("client_token");
+            }
+        }
+        catch (JSONException e) {
+            e.printStackTrace();
+            System.exit(2);
+        }
     }
 
 }
