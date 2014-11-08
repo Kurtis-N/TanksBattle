@@ -69,16 +69,17 @@ public class StateChannel implements Runnable{
                     for(int j = 0; j < tanks.length(); j++) {
                         JSONObject tank = tanks.getJSONObject(j);
                         //System.out.println("tank: "+j+"\n"+tank.toString());
-                        tankIds.add(tank.get("id").toString());
+                        //tankIds.add(tank.get("id").toString());
+                        ids.add(tank.get("id").toString());
                     }
                 }
             }
 
-            System.out.println("tankIds: ");
-            for(String s : tankIds) {
+            //System.out.println("tankIds: ");
+            //for(String s : tankIds) {
                 //System.out.println(s);
-                ids.add(s);
-            }
+            //    ids.add(s);
+            //}
             //for(String s : ids) {
             //    System.out.println(s);
             //}

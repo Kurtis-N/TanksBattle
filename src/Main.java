@@ -10,7 +10,7 @@ public class Main {
 
     public static void main(String[] args) {
         String teamName = "Tanks But No Tanks";
-        String matchToken = "a8523ad5-5397-42e7-a385-799c9aff51c2";
+        String matchToken = "7962bc4d-4967-4e5a-82a6-03afae563a32";
         String serverIP = "ip-10-234-167-219.ec2.internal";
 
         System.out.println("Starting Tanks..");
