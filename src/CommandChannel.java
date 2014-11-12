@@ -11,7 +11,7 @@ import java.util.Queue;
 public class CommandChannel implements Runnable {
     private ZMQ.Socket channel;
     private Queue<JSONObject> q; //change this to String so don't need try/catch for JSONObject creation
-    private String matchToken;
+    private volatile String matchToken;
 
     public volatile String clientToken = "";
 
@@ -39,9 +39,6 @@ public class CommandChannel implements Runnable {
             System.exit(1);
         }
 
-        //Put below in while loop?
-
-        //System.out.println("matchconnect: " + matchconnect.toString());
         channel.send(matchconnect.toString().getBytes(), 0);
         String r = new String(channel.recv(0));
         //System.out.println("response: " + r);
@@ -60,11 +57,9 @@ public class CommandChannel implements Runnable {
 
         //get next command from q, execute command
         while(true){
-
             if(checkEmpty()) {
-                //half a second sleep
                 try {
-                    Thread.sleep(500);
+                    Thread.sleep(200);
                 }
                 catch(InterruptedException e) {
                     e.printStackTrace();
@@ -75,8 +70,8 @@ public class CommandChannel implements Runnable {
         }
     }
 
+
     //it is not possible for two invocations of synchronized methods on the same object to interleave
-    //we'll have another thread writing to the queue?
     public synchronized boolean checkEmpty() {
         if(q.isEmpty())
             return true;
@@ -94,14 +89,79 @@ public class CommandChannel implements Runnable {
         JSONObject resp = null;
         try {
             resp = new JSONObject(r);
-            if(resp.getString("comm_type").equals("MatchConnectResp")){
-                clientToken = resp.getString("client_token");
-            }
+            System.out.println("response:\n"+resp.toString());
         }
         catch (JSONException e) {
             e.printStackTrace();
-            System.exit(2);
+            //System.exit(2);
         }
     }
+
+    public void rotateTank(String id, String direction, double degree) {
+        JSONObject move = null;
+        try {
+            move = new JSONObject();
+            move.put("tank_id", id);
+            move.put("comm_type", "ROTATE");
+            move.put("direction", direction);
+            move.put("rads", degree);
+            move.put("client_token", clientToken);
+            //System.out.println(attack.toString());
+            addToQueue(move);
+        } catch (JSONException e) {
+            //e.printStackTrace();
+            System.out.println("rotateTank not properly forming");
+        }
+    }
+
+    public void rotateTurrent(String id, String direction, double degree) {
+        JSONObject move = null;
+        try {
+            move = new JSONObject();
+            move.put("tank_id", id);
+            move.put("comm_type", "ROTATE_TURRET");
+            move.put("direction", direction);
+            move.put("rads", degree);
+            move.put("client_token", clientToken);
+            //System.out.println(attack.toString());
+            addToQueue(move);
+        } catch (JSONException e) {
+            //e.printStackTrace();
+            System.out.println("rotateTurret not properly forming");
+        }
+    }
+
+    public void fire(String id) {
+        JSONObject move = null;
+        try {
+            move = new JSONObject();
+            move.put("tank_id", id);
+            move.put("comm_type", "FIRE");
+            move.put("client_token", clientToken);
+            //System.out.println(attack.toString());
+            addToQueue(move);
+        } catch (JSONException e) {
+            //e.printStackTrace();
+            System.out.println("fire not properly forming");
+        }
+    }
+
+    public void stop(String id, String direction) {
+        JSONObject move = null;
+        try {
+            move = new JSONObject();
+            move.put("tank_id", id);
+            move.put("comm_type", "STOP");
+            move.put("control", "ROTATE");
+            move.put("client_token", clientToken);
+            //System.out.println(attack.toString());
+            addToQueue(move);
+        } catch (JSONException e) {
+            //e.printStackTrace();
+            System.out.println("rotateTurret not properly forming");
+        }
+    }
+
+
 
 }

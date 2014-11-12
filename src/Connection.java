@@ -44,16 +44,10 @@ public class Connection {
         //uses TCP, port 5556
         StateChannel sc = new StateChannel(context, serverIP, matchToken);
 
-        /*List<String> tankIds = sc.ids;
-        while(tankIds.isEmpty()) {
-            tankIds = sc.ids;
-        }
-        for(String id : tankIds)
-                System.out.println(id);*/
-
         //Our algorithm
         Algo algo = new Algo(cc, sc);
-        algo.spinAndShoot();
+        algo.begin();
+        //algo.spinAndShoot();
         //algo.betterAlgorithm();
 
         //wait for threads to die
