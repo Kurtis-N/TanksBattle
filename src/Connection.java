@@ -42,11 +42,11 @@ public class Connection {
         //Now that we have the client token, set up the state channel to monitor the game board state
         //This is a read only channel
         //uses TCP, port 5556
-        StateChannel sc = new StateChannel(context, serverIP, matchToken);
+        StateChannel sc = new StateChannel(context, serverIP, matchToken, cc);
 
         //Our algorithm
-        Algo algo = new Algo(cc, sc);
-        algo.begin();
+        //Algo algo = new Algo(cc, sc);
+        //algo.begin();
         //algo.spinAndShoot();
         //algo.betterAlgorithm();
 

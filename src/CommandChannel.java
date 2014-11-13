@@ -59,7 +59,7 @@ public class CommandChannel implements Runnable {
         while(true){
             if(checkEmpty()) {
                 try {
-                    Thread.sleep(200);
+                    Thread.sleep(500);
                 }
                 catch(InterruptedException e) {
                     e.printStackTrace();
@@ -84,15 +84,16 @@ public class CommandChannel implements Runnable {
 
     public synchronized void sendCommand() {
         JSONObject c = q.poll();
+        System.out.println(c.toString());
         channel.send(c.toString().getBytes(), 0);
         String r = new String(channel.recv(0));
         JSONObject resp = null;
         try {
             resp = new JSONObject(r);
-            System.out.println("response:\n"+resp.toString());
+           System.out.println("response:\n"+resp.toString());
         }
         catch (JSONException e) {
-            e.printStackTrace();
+            //e.printStackTrace();
             //System.exit(2);
         }
     }
@@ -104,7 +105,7 @@ public class CommandChannel implements Runnable {
             move.put("tank_id", id);
             move.put("comm_type", "ROTATE");
             move.put("direction", direction);
-            move.put("rads", degree);
+            move.put("rads", Math.toRadians(degree));
             move.put("client_token", clientToken);
             //System.out.println(attack.toString());
             addToQueue(move);
