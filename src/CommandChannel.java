@@ -85,13 +85,15 @@ public class CommandChannel implements Runnable {
 
     public synchronized void sendCommand() {
         JSONObject c = q.poll();
-        System.out.println("command:\n"+c.toString());
+        //System.out.println("command:\n"+c.toString());
         channel.send(c.toString().getBytes(), 0);
         String r = new String(channel.recv(0));
         JSONObject resp = null;
         try {
            resp = new JSONObject(r);
-           System.out.println("response:\n"+resp.toString());
+           if(resp.getString("comm_type").equals("ErrorResp")) {
+               System.out.println("response:\n" + resp.toString());
+           }
         }
         catch (JSONException e) {
             System.out.println("invalid response?");
@@ -156,6 +158,23 @@ public class CommandChannel implements Runnable {
             move.put("tank_id", id);
             move.put("comm_type", "STOP");
             move.put("control", "ROTATE");
+            move.put("client_token", clientToken);
+            //System.out.println(attack.toString());
+            addToQueue(move);
+        } catch (JSONException e) {
+            //e.printStackTrace();
+            System.out.println("rotateTurret not properly forming");
+        }
+    }
+
+    public void move(String id, String direction, double distance) {
+        JSONObject move = null;
+        try {
+            move = new JSONObject();
+            move.put("tank_id", id);
+            move.put("comm_type", "MOVE");
+            move.put("direction", direction);
+            move.put("distance", distance);
             move.put("client_token", clientToken);
             //System.out.println(attack.toString());
             addToQueue(move);
