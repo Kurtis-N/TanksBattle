@@ -30,7 +30,7 @@ public class Algo {
 
     //spin and shoot !
     public void spinAndShoot() {
-        while(true) {
+        /*while(true) {
             String id1 = sc.getID1();
             String id2 = sc.getID2();
             //System.out.println("starting spin & shoot");
@@ -88,6 +88,6 @@ public class Algo {
                     e.printStackTrace();
                 }
             }
-        }
+        }*/
     }
 }

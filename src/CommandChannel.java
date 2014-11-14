@@ -10,7 +10,7 @@ import java.util.Queue;
  */
 public class CommandChannel implements Runnable {
     private ZMQ.Socket channel;
-    private Queue<JSONObject> q; //change this to String so don't need try/catch for JSONObject creation
+    private volatile Queue<JSONObject> q; //change this to String so don't need try/catch for JSONObject creation
     private volatile String matchToken;
 
     public volatile String clientToken = "";
@@ -48,6 +48,7 @@ public class CommandChannel implements Runnable {
             resp = new JSONObject(r);
             if(resp.getString("comm_type").equals("MatchConnectResp")){
                 clientToken = resp.getString("client_token");
+                System.out.println("clientToken from MatchConnectResp: " + clientToken);
             }
         }
         catch (JSONException e) {
@@ -84,15 +85,16 @@ public class CommandChannel implements Runnable {
 
     public synchronized void sendCommand() {
         JSONObject c = q.poll();
-        System.out.println(c.toString());
+        System.out.println("command:\n"+c.toString());
         channel.send(c.toString().getBytes(), 0);
         String r = new String(channel.recv(0));
         JSONObject resp = null;
         try {
-            resp = new JSONObject(r);
+           resp = new JSONObject(r);
            System.out.println("response:\n"+resp.toString());
         }
         catch (JSONException e) {
+            System.out.println("invalid response?");
             //e.printStackTrace();
             //System.exit(2);
         }

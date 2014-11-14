@@ -20,7 +20,7 @@ public class StateChannel implements Runnable{
     private Queue<JSONObject> q;
     private boolean flag = false;
     public static volatile ArrayList<String> ids;
-    private volatile String id1 = "";
+   /* private volatile String id1 = "";
     private volatile String id2 = "";
 
     private volatile double p1x;
@@ -42,22 +42,36 @@ public class StateChannel implements Runnable{
     private volatile double enemyAngle1;
     private volatile double enemyAngle2;
 
-    private CommandChannel cc;
+    private boolean alive1 = false;
+    private boolean alive2 = false;
+
+    private double timeRemaining = 500000;*/
+
     private String clientToken;
 
-    public StateChannel(ZMQ.Context context, String serverIP, String matchToken, CommandChannel cc) {
+    public StateChannel(ZMQ.Context context, String serverIP, String matchToken, String clientToken) {
         this.context = context;
         this.serverIP = serverIP;
         this.matchToken = matchToken;
-        this.cc = cc;
-        clientToken = cc.clientToken;
+        this.clientToken = clientToken;
         channel = context.socket(ZMQ.SUB);
         q = new LinkedList<JSONObject>();
         channel.connect("tcp://"+serverIP+":5556");
         channel.subscribe(matchToken.getBytes());
         System.out.println("connecting to state channel: " + serverIP);
 
-        (new Thread(this)).start();
+        //
+        // (new Thread(this)).start();
+    }
+
+    public String getGameState() {
+        byte[] m = channel.recv(0);
+        String msg = new String(m);
+
+        //ignore the matchToken
+        msg = msg.replace(matchToken, "");
+        //System.out.println("msg: \n"+msg);
+        return msg;
     }
 
     public void run() {
@@ -67,13 +81,13 @@ public class StateChannel implements Runnable{
         while(true) {
             byte[] m = channel.recv(0);
             String msg = new String(m);
+
+            //ignore the matchToken
+            msg = msg.replace(matchToken, "");
             //System.out.println("msg: \n"+msg);
 
-            //ignore the matchTokens
-            msg = msg.replace(matchToken, "");
-
-            if(msg != null || !msg.isEmpty() || msg.equals("")) {
-                parseMessage(msg);
+            if(msg != null || !msg.isEmpty() || !msg.equals("")) {
+               // updateState(msg);
                 try {
                     Thread.sleep(100);
                 } catch (InterruptedException e) {
@@ -84,6 +98,32 @@ public class StateChannel implements Runnable{
         }
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+
     public void parseMessage(String msg) {
         try {
             JSONObject resp = new JSONObject(msg);
@@ -91,9 +131,13 @@ public class StateChannel implements Runnable{
                 return;
             } else if (resp.get("comm_type").equals("GAME_START")) {
                 return;
-            } else if (resp.get("comm_type").equals("GAMESTATE")) {
+            } else if (resp.get("comm_type").equals("GAMESTATE") && resp.getDouble("timeRemaining") < timeRemaining) {
+                timeRemaining = resp.getDouble("timeRemaining");
                 update(msg);
-                aimAndShoot();
+                if(alive1)
+                    aimAndShoot1();
+                if(alive2)
+                    aimAndShoot2();
                 //spinAndShoot();
             }
         } catch (JSONException e) {
@@ -103,104 +147,59 @@ public class StateChannel implements Runnable{
     }
 
 
-    /*
-        Spin and shoot motherfucka!!!
-    */
-    public void spinAndShoot() {
-        String id1 = getID1();
-        String id2 = getID2();
-        //System.out.println("starting spin & shoot");
-        if(!id1.isEmpty()) {
-            cc.fire(id1);
-            cc.rotateTurrent(id1, "CCW", 35);
-        }
-        if(!id2.isEmpty()) {
-            cc.fire(id2);
-            cc.rotateTurrent(id2, "CW", 35);
-        }
-    }
+
 
     /*
        check which tank closer too
        calculate angle to rotate
        rotate that angle
        shoot at that angle
-    */
-    public void aimAndShoot() {
+
+    public void aimAndShoot1() {
         //for tank 1
         //Math.sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2));
         double d1 = Math.abs(Math.sqrt((getP1x() - getE1x()) * (getP1x() - getE1x()) + (getP1y() - getE1y()) * (getP1y() - getE1y())));
-        double d2 = Math.abs(Math.sqrt((getP1x()-getE2x())*(getP1x()-getE2x()) + (getP1y()-getE2y())*(getP1y()-getE2y())));
+        double d2 = Math.abs(Math.sqrt((getP1x() - getE2x()) * (getP1x() - getE2x()) + (getP1y() - getE2y()) * (getP1y() - getE2y())));
         //which tank to aim at
         //if(d1 >= d2) {
-            //whether to rotate cw or ccw
-            double angle = Math.atan2(getE1y()-getP1y(),getE1x()-getP1x());
-            if(angle < 0) {
-                angle += 2*Math.PI;
-            }
-            System.out.println("angle: " + Math.toDegrees(angle));
-            System.out.println("turret: " + turret1);
-            double rotate = Math.toRadians(turret1)-angle;
-            if(rotate < 0)
-                cc.rotateTurrent(getID1(), "CW", Math.abs(rotate));
-            else
-                cc.rotateTurrent(getID1(), "CCW", Math.abs(rotate));
-            cc.fire(getID1());
-            System.out.println("aim n shoot : " + Math.toDegrees(Math.abs(rotate)));
-//            if(getTurret1() > getEnemyAngle1()) {
-//                cc.rotateTurrent(getID1(), "CW", getTurret1() - getEnemyAngle1());
-//            }
-//            else
-//                cc.rotateTurrent(getID1(), "CCW", getTurret1() - getEnemyAngle1());
-//            cc.fire(getID1());
+        double angle = Math.atan2(getE1y() - getP1y(), getE1x() - getP1x());
+        if (angle < 0) {
+            angle += 2 * Math.PI;
+        }
+        //System.out.println("angle: " + Math.toDegrees(angle));
+        //System.out.println("turret: " + turret1);
+        double rotate = Math.toRadians(turret1) - angle;
+        if (rotate < 0)
+            cc.rotateTurrent(getID1(), "CW", Math.abs(rotate));
+        else
+            cc.rotateTurrent(getID1(), "CCW", Math.abs(rotate));
+        cc.fire(id1);
+        //System.out.println("aim n shoot : " + Math.toDegrees(Math.abs(rotate)));
+    }
 
-        //}
-//        else {
-////            if(getTurret1() > getEnemyAngle2()) {
-////                cc.rotateTurrent(getID1(), "CW", getTurret1() - getEnemyAngle2());
-////            }
-////            else
-////                cc.rotateTurrent(getID1(), "CCW", getTurret1() - getEnemyAngle2());
-////            cc.fire(getID1());
-//        }
+    public void aimAndShoot2() {
 
         //for tank2
-        d1 = Math.abs(Math.sqrt((getP1x()-getE1x())*(getP1x()-getE1x()) + (getP1y()-getE1y())*(getP1y()-getE1y())));
-        d2 = Math.abs(Math.sqrt((getP1x()-getE2x())*(getP1x()-getE2x()) + (getP1y()-getE2y())*(getP1y()-getE2y())));
-        /*if(d1 >= d2) {
-            if(getTurret2() > getEnemyAngle1()) {
-                cc.rotateTurrent(getID2(), "CW", getTurret2() - getEnemyAngle1());
-            }
-            else
-                cc.rotateTurrent(getID2(), "CCW", getTurret2() - getEnemyAngle1());
-            cc.fire(getID2());
-        }
-        else {
-            if(getTurret2() > getEnemyAngle2()) {
-                cc.rotateTurrent(getID2(), "CW", getTurret2() - getEnemyAngle2());
-            }
-            else
-                cc.rotateTurrent(getID2(), "CCW", getTurret2() - getEnemyAngle2());
-            cc.fire(getID2());
-        }*/
-        angle = Math.atan2(getE2y()-getP2y(),getE2x()-getP2x());
+        double d1 = Math.abs(Math.sqrt((getP1x()-getE1x())*(getP1x()-getE1x()) + (getP1y()-getE1y())*(getP1y()-getE1y())));
+        double d2 = Math.abs(Math.sqrt((getP1x()-getE2x())*(getP1x()-getE2x()) + (getP1y()-getE2y())*(getP1y()-getE2y())));
+        double angle = Math.atan2(getE2y()-getP2y(),getE2x()-getP2x());
         if(angle < 0) {
             angle += (2*Math.PI);
         }
         //System.out.println("angle: " + Math.toDegrees(angle));
         //System.out.println("turrent: " + turret1);
-        rotate = Math.toRadians(turret1)-angle;
+        double rotate = Math.toRadians(turret1)-angle;
         if(rotate < 0)
             cc.rotateTurrent(getID2(), "CW", Math.abs(rotate));
         else
             cc.rotateTurrent(getID2(), "CCW", Math.abs(rotate));
-        cc.fire(getID2());
+        cc.fire(id2);
         //System.out.println("aim n shoot : " + Math.abs(rotate)  );
     }
 
 
 
-    public  void update(String r) {
+    //public  void update(String r) {
         try {
             JSONObject resp = new JSONObject(r);
             JSONArray players = (JSONArray) resp.get("players");
@@ -208,19 +207,22 @@ public class StateChannel implements Runnable{
             for (int i = 0; i < players.length(); i++) {
                 JSONObject p = new JSONObject(players.get(i).toString());
 
-                /* update our guys */
+                // update our guys
                 if (p.get("name").equals("Tanks But No Tanks")) {
                     JSONArray tanks = (JSONArray) p.get("tanks");
                     //for each tank - check if it's alive - then add the id
                     JSONObject tank = tanks.getJSONObject(0);
                     //if dead remove
+                    //System.out.println("alive: " + tank.getBoolean("alive"));
                     if (!tank.getBoolean("alive")) {
-                        if (getID1().equals(tank.get("id").toString())) {
-                            setId1("");
-                        }
+                          alive1 = false;
+//                        if (getID1().equals(tank.get("id").toString())) {
+//                            setId1("");
+//                        }
                     }
                     else {
-                        setId1(tank.get("id").toString());
+                        alive1 = true;
+                        setId1(tank.getString("id"));
                         JSONArray d = tank.getJSONArray("position");
                         setP1x(d.getDouble(0));
                         setP1y(d.getDouble(1));
@@ -230,22 +232,23 @@ public class StateChannel implements Runnable{
                     tank = tanks.getJSONObject(1);
                     //if dead, remove from list
                     if (!tank.getBoolean("alive")) {
-                        if (getID2().equals(tank.get("id").toString())) {
-                            setId2("");
-                        }
+                          alive2 = false;
+//                        if (getID2().equals(tank.get("id").toString())) {
+//                            setId2("");
+//                        }
                     }
                     else {
-                        setId2(tank.get("id").toString());
+                        alive2 = true;
+                        setId2(tank.getString("id"));
                         JSONArray d = tank.getJSONArray("position");
                         setE1x(d.getDouble(0));
                         setE1y(d.getDouble(1));
                         setAngle2(getAngle(getP2x(), getP2y()));
                         setTurret2(Math.toDegrees(tank.getDouble("turret")));
-
                     }
                 }
 
-                /* update their guys */
+                // update their guys
                 else {
                     JSONArray tanks = (JSONArray) p.get("tanks");
                     JSONObject tank = tanks.getJSONObject(0);
@@ -276,11 +279,9 @@ public class StateChannel implements Runnable{
             }
         } catch (JSONException e) {
             //e.printStackTrace();
-            System.out.println("caught json error");
+            //System.out.println("caught json error in updating tanks");
         }
     }
-
-
 
     public double getAngle(double x, double y) {
        double angle = Math.toDegrees(Math.atan2(y, x));
@@ -288,6 +289,26 @@ public class StateChannel implements Runnable{
            angle += 360;
        }
        return angle;
+    }
+
+
+
+
+    public void spinAndShoot() {
+         /*
+        Spin and shoot motherfucka!!!
+
+        String id1 = getID1();
+        String id2 = getID2();
+        //System.out.println("starting spin & shoot");
+        if(!id1.isEmpty()) {
+            cc.fire(id1);
+            cc.rotateTurrent(id1, "CCW", 35);
+        }
+        if(!id2.isEmpty()) {
+            cc.fire(id2);
+            cc.rotateTurrent(id2, "CW", 35);
+        }
     }
 
     public String getID1() {
@@ -417,4 +438,6 @@ public class StateChannel implements Runnable{
     public void setTurret2(double turret2) {
         this.turret2 = turret2;
     }
+
+    */
 }
