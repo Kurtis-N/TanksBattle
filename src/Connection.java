@@ -101,8 +101,8 @@ public class Connection {
                         aim2();
                         cc.fire(id2);
                     }
-                    moveRandom(id1);
-                    moveRandom(id2);
+                    //moveRandom(id1);
+                    //moveRandom(id2);
                     //spinAndShoot();
                 }
             } catch (JSONException e) {
@@ -138,15 +138,15 @@ public class Connection {
 
     //change the aims to whichever is closer or has line of sight
     public void aim1() {
-        double angle = Math.atan2(e1y, e1x);
+        double angle = Math.atan2(p2y-p1y, p2x-p1x);
         if(angle < 0) {
             angle += (2*Math.PI);
         }
         double rotate = turret1-angle;
-        if(rotate > 0)
-            cc.rotateTurrent(id1, "CW", rotate);
+        if(rotate >= 0)
+            cc.rotateTurret(id1, "CCW", rotate);
         else
-            cc.rotateTurrent(id1, "CCW", Math.abs(rotate));
+            cc.rotateTurret(id1, "CW", Math.abs(rotate));
 
         /*double rotate = angle = turret1;
         if(rotate > 2*Math.acos(-1))
@@ -158,9 +158,9 @@ public class Connection {
         else if(rotate < -Math.acos(-1))
             rotate += 2*Math.acos(-1);
         if(rotate > 0)
-            cc.rotateTurrent(id1, "CCW", Math.abs(rotate));
+            cc.rotateTurret(id1, "CCW", Math.abs(rotate));
         else
-            cc.rotateTurrent(id1, "CW", rotate);
+            cc.rotateTurret(id1, "CW", rotate);
         */
 
         //System.out.println("e1y: " + e1y + " e1x: " + e1x + " angle:" + Math.atan2(e1y, e1x));
@@ -168,15 +168,15 @@ public class Connection {
     }
 
     public void aim2() {
-        double angle = Math.atan2(e2y, e2x);
+        double angle = Math.atan2(p1y-p2y, p1x-p2x);
         if(angle < 0) {
             angle += (2*Math.PI);
         }
         double rotate = turret2-angle;
-        if(rotate > 0)
-            cc.rotateTurrent(id2, "CW", rotate);
+        if(rotate >= 0)
+            cc.rotateTurret(id2, "CCW", rotate);
         else
-            cc.rotateTurrent(id2, "CCW", Math.abs(rotate));
+            cc.rotateTurret(id2, "CW", Math.abs(rotate));
 
 
 /*        if(rotate > 2*Math.acos(-1))
@@ -188,9 +188,9 @@ public class Connection {
         else if(rotate < -Math.acos(-1))
             rotate += 2*Math.acos(-1);
         if(rotate > 0)
-            cc.rotateTurrent(id1, "CCW", Math.abs(rotate));
+            cc.rotateTurret(id1, "CCW", Math.abs(rotate));
         else
-            cc.rotateTurrent(id1, "CW", rotate);
+            cc.rotateTurret(id1, "CW", rotate);
             */
        //    System.out.println("turret2: " + turret2 +" angle: " + angle + " rotate: " + Math.abs(rotate));
     }
@@ -215,9 +215,6 @@ public class Connection {
                         p1x = d.getDouble(0);
                         p1y = d.getDouble(1);
                         turret1 = tank.getDouble("turret");
-
-                        cc.fire(id1);
-                        cc.rotateTurrent(id1, "CW", Math.toRadians(90));
                     }
                     else {
                         alive1 = false;
@@ -231,9 +228,6 @@ public class Connection {
                         p2x = d.getDouble(0);
                         p2y = d.getDouble(1);
                         turret2 = tank.getDouble("turret");
-
-                        cc.fire(id2);
-                        cc.rotateTurrent(id2, "CW", Math.toRadians(90));
                     }
                     else {
                         alive2 = false;

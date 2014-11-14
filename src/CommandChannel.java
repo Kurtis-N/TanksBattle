@@ -91,9 +91,9 @@ public class CommandChannel implements Runnable {
         JSONObject resp = null;
         try {
            resp = new JSONObject(r);
-           if(resp.getString("comm_type").equals("ErrorResp")) {
-               System.out.println("response:\n" + resp.toString());
-           }
+           //if(resp.getString("comm_type").equals("ErrorResp")) {
+           //    System.out.println("response:\n" + resp.toString());
+           //}
         }
         catch (JSONException e) {
             System.out.println("invalid response?");
@@ -119,7 +119,7 @@ public class CommandChannel implements Runnable {
         }
     }
 
-    public void rotateTurrent(String id, String direction, double degree) {
+    public void rotateTurret(String id, String direction, double degree) {
         JSONObject move = null;
         try {
             move = new JSONObject();
