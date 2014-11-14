@@ -50,14 +50,18 @@ public class Connection {
     private boolean enemyAlive1 = false;
     private boolean enemyAlive2 = false;
 
+    private long pt1 = -1;
+    private long pt2 = -1;
 
+    private long mv1 = -1;
+    private long mv2 = -1;
 
     public Connection() {}
 
     public Connection(String matchToken, String serverIP) {
         this.matchToken = matchToken;
         this.serverIP = serverIP;
-        rand = new Random(16011992);
+        rand = new Random(7919);
 
         //Make one CommandChannel for commands
         //Command issues a connect to the server, then loops forever
@@ -81,46 +85,69 @@ public class Connection {
 
 
         while (true) {
-            String gs = sc.getGameState();
-            if (gs == null || gs.isEmpty() || gs.equals("")) {
-                continue;
-            }
-            try {
-                JSONObject resp = new JSONObject(gs);
-                if (resp.get("comm_type").equals("GAME_END")) {
-                    return;
+
+                String gs = sc.getGameState();
+                if (gs == null || gs.isEmpty() || gs.equals("")) {
+                    continue;
                 }
-                if (resp.get("comm_type").equals("GAMESTATE") && resp.getDouble("timeRemaining") < timeRemaining) {
-                    update(gs);
-                    timeRemaining = resp.getDouble("timeRemaining");
-                    if(alive1) {
-                        aim1();
+                try {
+                    JSONObject resp = new JSONObject(gs);
+                    //if (resp.get("comm_type").equals("GAME_END")) {
+                    //    return;
+                    //}
+                    if (resp.get("comm_type").equals("GAMESTATE") && resp.getDouble("timeRemaining") < timeRemaining) {
+                        update(gs);
+                        timeRemaining = resp.getDouble("timeRemaining");
+                        if (alive1) {
+                            aim1();
+                        }
+                        if (alive2) {
+                            aim2();
+                        }
+
                         cc.fire(id1);
-                    }
-                    if(alive2) {
-                        aim2();
                         cc.fire(id2);
+
+                        moveRandom(id1);
+//                        try {
+//                            Thread.sleep(300);
+//                        } catch (InterruptedException e) {
+//                    //e.printStackTrace();
+//                        }
+                        moveRandom(id2);
+//                        try {
+//                            Thread.sleep(300);
+//                        } catch (InterruptedException e) {
+//                            //e.printStackTrace();
+//                        }
+                        //spinAndShoot();
                     }
-                    //moveRandom(id1);
-                    //moveRandom(id2);
-                    //spinAndShoot();
+                } catch (JSONException e) {
+                    //e.printStackTrace();
+                    //System.out.println("caught json error");
                 }
-            } catch (JSONException e) {
-                //e.printStackTrace();
-                //System.out.println("caught json error");
-            }
-            try {
-                Thread.sleep(100);
-            }
-            catch(InterruptedException e) {
-                e.printStackTrace();
-            }
+//            try {
+//                Thread.sleep(50);
+//            }
+//            catch(InterruptedException e) {
+//                e.printStackTrace();
+//            }
 
         }
     }
 
     //put this in a thread that periodically calls it
     public void moveRandom(String id) {
+        if(id.equals(id1)) {
+            long ct1 = System.nanoTime();
+            if(ct1 < mv1)
+                return;
+        }
+        else if(id.equals(id2)) {
+            long ct2 = System.nanoTime();
+            if(ct2 < mv2)
+                return;
+        }
         int i = rand.nextInt(2);
         String dir = "";
         String facing = "";
@@ -132,81 +159,93 @@ public class Connection {
             dir = "REV";
             facing = "CCW";
         }
-        cc.rotateTank(id, facing, Math.toRadians(45));
-        cc.move(id, dir, rand.nextInt(100));
+        //cc.rotateTank(id, facing, Math.toRadians(45));
+        double r = rand.nextInt(17);
+        if(id.equals(id1)) {
+            mv1 = System.nanoTime() + (long) (r * 100000000);
+        }
+        else if(id.equals(id2)) {
+            mv2 = System.nanoTime() + (long) (r * 100000000);
+        }
+        cc.move(id, dir, r);
     }
 
     //change the aims to whichever is closer or has line of sight
     public void aim1() {
-        double angle = Math.atan2(p2y-p1y, p2x-p1x);
-        if(angle < 0) {
-            angle += (2*Math.PI);
+        long ct1 = System.nanoTime();
+        if(ct1 < pt1)
+            return;
+        double angle = Math.atan2(e1y-p1y, e1x-p1x);
+        if(angle < 0)
+            angle += 2*Math.PI;
+        double diff = Math.abs(turret1 - angle);
+        if(diff < 0.01) {
+            cc.stop(id1, "ROTATE_TURRET");
+            return;
         }
-        double rotate = turret1-angle;
-        if(rotate < -1*(Math.PI))
-            rotate += 2*Math.PI;
-        else if(rotate > Math.PI)
-            rotate -= 2*Math.PI;
+        pt1 = System.nanoTime();
 
-        if(rotate >= 0)
-            cc.rotateTurret(id1, "CCW", rotate);
-        else
-            cc.rotateTurret(id1, "CW", Math.abs(rotate));
-
-        /*double rotate = angle = turret1;
-        if(rotate > 2*Math.acos(-1))
-            rotate = rotate-2*Math.acos(-1);
-        if(rotate < -(2*Math.acos(-1)))
-            rotate = rotate+2*Math.acos(-1);
-        if(rotate > Math.acos(-1))
-            rotate -= 2*Math.acos(-1);
-        else if(rotate < -Math.acos(-1))
-            rotate += 2*Math.acos(-1);
-        if(rotate > 0)
-            cc.rotateTurret(id1, "CCW", Math.abs(rotate));
-        else
-            cc.rotateTurret(id1, "CW", rotate);
-        */
-
-        //System.out.println("e1y: " + e1y + " e1x: " + e1x + " angle:" + Math.atan2(e1y, e1x));
-        //System.out.println("turret1: " + turret1 +" angle: " + angle + " rotate: " + Math.abs(rotate));
+        if(angle > Math.toRadians(turret1)) {
+            if(Math.toDegrees(diff) <= 180) {
+                //System.out.println("rotate CCW: " + Math.toDegrees(diff));
+                cc.rotateTurret(id1,"CCW", diff);
+                pt1 += (diff/1.5)*1000000000;
+            }
+            else {
+                //System.out.println("rotate CW: " + (360 - Math.toDegrees(diff)));
+                cc.rotateTurret(id1, "CW", (2*Math.PI)-diff);
+                pt1 += (diff/(2*Math.PI))*1000000000;
+            }
+        }
+        else {
+            if(Math.toDegrees(diff) <= 180) {
+                //System.out.println("rotate CW " + Math.toDegrees(diff));
+                cc.rotateTurret(id1, "CW", diff);
+                pt1 += (diff/1.5)*1000000000;
+            }
+            else {
+                //System.out.println("rotate CCW: " + (360 - Math.toDegrees(diff)));
+                cc.rotateTurret(id1, "CCW", (2*Math.PI)-diff);
+                pt1 += (diff/(2*Math.PI))*1000000000;
+            }
+        }
     }
 
     public void aim2() {
-        double angle = Math.atan2(p1y-p2y, p1x-p2x);
-        if(angle < 0) {
-            angle += (2*Math.PI);
+        long ct2 = System.nanoTime();
+        if(ct2 < pt2)
+            return;
+        double angle = Math.atan2(e1y-p2y, e1x-p2x);
+        if(angle < 0)
+            angle += 2*Math.PI;
+        double diff = Math.abs(turret2 - angle);
+        if(diff < 0.01) {
+            cc.stop(id2, "ROTATE_TURRET");
+            return;
         }
-        double rotate = turret2-angle;
-        if(rotate < -1*(Math.PI))
-            rotate += 2*Math.PI;
-        else if(rotate > Math.PI)
-            rotate -= 2*Math.PI;
-
-        if(rotate >= 0)
-            cc.rotateTurret(id2, "CCW", rotate);
-        else
-            cc.rotateTurret(id2, "CW", Math.abs(rotate));
-
-
-
-/*        if(rotate > 2*Math.acos(-1))
-            rotate = rotate-2*Math.acos(-1);
-        if(rotate < -(2*Math.acos(-1)))
-            rotate = rotate+2*Math.acos(-1);
-        if(rotate > Math.acos(-1))
-            rotate -= 2*Math.acos(-1);
-        else if(rotate < -Math.acos(-1))
-            rotate += 2*Math.acos(-1);
-        if(rotate > 0)
-            cc.rotateTurret(id1, "CCW", Math.abs(rotate));
-        else
-            cc.rotateTurret(id1, "CW", rotate);
-            */
-       //    System.out.println("turret2: " + turret2 +" angle: " + angle + " rotate: " + Math.abs(rotate));
+        if(angle > Math.toRadians(turret2)) {
+            if(Math.toDegrees(diff) <= 180) {
+                //System.out.println("rotate CCW: " + Math.toDegrees(diff));
+                cc.rotateTurret(id2,"CCW", diff);
+            }
+            else {
+                //System.out.println("rotate CW: " + (360 - Math.toDegrees(diff)));
+                cc.rotateTurret(id2, "CW", (2*Math.PI)-diff);
+            }
+        }
+        else {
+            if(Math.toDegrees(diff) <= 180) {
+                //System.out.println("rotate CW " + Math.toDegrees(diff));
+                cc.rotateTurret(id2, "CW", diff);
+            }
+            else {
+                //System.out.println("rotate CCW: " + (360 - Math.toDegrees(diff)));
+                cc.rotateTurret(id2, "CCW", (2*Math.PI)-diff);
+            }
+        }
     }
 
-    public void update(String r) {
+    public synchronized void update(String r) {
         try {
             JSONObject resp = new JSONObject(r);
             JSONArray players = (JSONArray) resp.get("players");

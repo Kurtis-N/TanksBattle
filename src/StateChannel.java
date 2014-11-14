@@ -61,11 +61,11 @@ public class StateChannel implements Runnable{
 
             if(msg != null || !msg.isEmpty() || !msg.equals("")) {
                // updateState(msg);
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
-                    //e.printStackTrace();
-                }
+//                try {
+//                    Thread.sleep(50);
+//                } catch (InterruptedException e) {
+//                    //e.printStackTrace();
+//                }
             }
 
         }
