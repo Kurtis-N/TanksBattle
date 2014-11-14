@@ -143,6 +143,11 @@ public class Connection {
             angle += (2*Math.PI);
         }
         double rotate = turret1-angle;
+        if(rotate < -1*(Math.PI))
+            rotate += 2*Math.PI;
+        else if(rotate > Math.PI)
+            rotate -= 2*Math.PI;
+
         if(rotate >= 0)
             cc.rotateTurret(id1, "CCW", rotate);
         else
@@ -173,10 +178,16 @@ public class Connection {
             angle += (2*Math.PI);
         }
         double rotate = turret2-angle;
+        if(rotate < -1*(Math.PI))
+            rotate += 2*Math.PI;
+        else if(rotate > Math.PI)
+            rotate -= 2*Math.PI;
+
         if(rotate >= 0)
             cc.rotateTurret(id2, "CCW", rotate);
         else
             cc.rotateTurret(id2, "CW", Math.abs(rotate));
+
 
 
 /*        if(rotate > 2*Math.acos(-1))
