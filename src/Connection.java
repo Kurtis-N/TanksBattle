@@ -39,6 +39,9 @@ public class Connection {
     private double angle1;
     private double angle2;
 
+    private double track1;
+    private double track2;
+
     private double turret1;
     private double turret2;
 
@@ -57,12 +60,15 @@ public class Connection {
     private long mv1 = -1;
     private long mv2 = -1;
 
+    List<Projectile> projectiles;
+
     public Connection() {}
 
     public Connection(String matchToken, String serverIP) {
         this.matchToken = matchToken;
         this.serverIP = serverIP;
         rand = new Random(7919);
+        projectiles = new ArrayList<Projectile>();
         //rand = new Random(104729);
 
         //Make one CommandChannel for commands
@@ -100,6 +106,7 @@ public class Connection {
             try {
                 JSONObject resp = new JSONObject(gs);
                 update(gs);
+                //updatePrime(gs);
 
                 if (!resp.get("comm_type").equals("GAMESTATE")) {
                     timeRemaining = 5000000;
@@ -276,13 +283,14 @@ public class Connection {
         if(d1 <= d2 && enemyAlive1) {
             angle = Math.atan2(e1y - p1y, e1x - p1x);
             //if the angles are within 5 rad and our tank is closer
-            if(Math.abs(angle - (Math.atan2(p2y - p1y, p2x - p1x))) < 0.087 && d3 < d1) {
+            if(Math.abs(angle - (Math.atan2(p2y - p1y, p2x - p1x))) < 0.176 && d3 < d1) {
                 return;
             }
         }
+        //0.087
         else if(enemyAlive2){
             angle = Math.atan2(e2y - p1y, e2x - p1x);
-            if(Math.abs(angle - (Math.atan2(p2y - p1y, p2x - p1x))) < 0.087 && d3 < d2) {
+            if(Math.abs(angle - (Math.atan2(p2y - p1y, p2x - p1x))) < 0.176 && d3 < d2) {
                 return;
             }
         }
@@ -403,6 +411,10 @@ public class Connection {
                         p1x = d.getDouble(0);
                         p1y = d.getDouble(1);
                         turret1 = tank.getDouble("turret");
+                        /*JSONArray p = tank.getJSONArray("position");
+                        for(int j = 0; j < p.length(); j++) {
+
+                        }*/
                     }
                     else {
                         alive1 = false;
@@ -459,4 +471,198 @@ public class Connection {
         }
     }
 
+    public void updatePrime(String r) {
+        try {
+            projectiles.clear();
+            JSONObject resp = new JSONObject(r);
+            JSONArray players = (JSONArray) resp.get("players");
+            //For each of our tanks
+            for (int i = 0; i < players.length(); i++) {
+                JSONObject p = new JSONObject(players.get(i).toString());
+
+                // update our guys
+                if (p.get("name").equals("Tanks But No Tanks")) {
+                    JSONArray tanks = (JSONArray) p.get("tanks");
+
+                    JSONObject tank = tanks.getJSONObject(0); //tank 1
+                    if (tank.getBoolean("alive")) {
+                        alive1 = true;
+                        id1 = tank.getString("id");
+                        JSONArray d = tank.getJSONArray("position");
+                        p1x = d.getDouble(0);
+                        p1y = d.getDouble(1);
+                        turret1 = tank.getDouble("turret");
+                        track1 = tank.getDouble("tracks");
+                    }
+                    else {
+                        alive1 = false;
+                    }
+                    JSONArray pos = tank.getJSONArray("projectile");
+                    for(int j = 0; j < pos.length(); j++) {
+                        JSONObject missile = pos.getJSONObject(i);
+                        JSONArray position = missile.getJSONArray("position");
+                        Projectile pj = new Projectile(position.getDouble(0), position.getDouble(1), missile.getDouble("direction"));
+                        projectiles.add(pj);
+                    }
+
+                    tank = tanks.getJSONObject(1); //tank 2
+                    if (tank.getBoolean("alive")) {
+                        alive2 = true;
+                        id2 = tank.getString("id");
+                        JSONArray d = tank.getJSONArray("position");
+                        p2x = d.getDouble(0);
+                        p2y = d.getDouble(1);
+                        turret2 = tank.getDouble("turret");
+                        track2 = tank.getDouble("tracks");
+                    }
+                    else {
+                        alive2 = false;
+                    }
+                    pos = tank.getJSONArray("projectile");
+                    for(int j = 0; j < pos.length(); j++) {
+                        JSONObject missile = pos.getJSONObject(i);
+                        JSONArray position = missile.getJSONArray("position");
+                        Projectile pj = new Projectile(position.getDouble(0), position.getDouble(1), missile.getDouble("direction"));
+                        projectiles.add(pj);
+                    }
+                }
+
+                //update their guys
+                else {
+                    JSONArray tanks = (JSONArray) p.get("tanks");
+                    JSONObject tank = tanks.getJSONObject(0);
+                    //if dead remove
+                    if (tank.getBoolean("alive")) {
+                        enemyAlive1 = true;
+                        JSONArray d = tank.getJSONArray("position");
+                        e1x = d.getDouble(0);
+                        e1y = d.getDouble(1);
+                        //setEnemyAngle1(getAngle(getE1x(), getE1y()));
+                    }
+                    //aim at other tank
+                    else {
+                        enemyAlive1 = false;
+                    }
+                    JSONArray pos = tank.getJSONArray("projectile");
+                    for(int j = 0; j < pos.length(); j++) {
+                        JSONObject missile = pos.getJSONObject(i);
+                        JSONArray position = missile.getJSONArray("position");
+                        Projectile pj = new Projectile(position.getDouble(0), position.getDouble(1), missile.getDouble("direction"));
+                        projectiles.add(pj);
+                    }
+
+                    tank = tanks.getJSONObject(1);
+                    if (tank.getBoolean("alive")) {
+                        enemyAlive2 = true;
+                        JSONArray d = tank.getJSONArray("position");
+                        e2x = d.getDouble(0);
+                        e2y = d.getDouble(1);
+                        //setEnemyAngle2(getAngle(getE2x(), getE2y()));
+                    }
+                    else {
+                        enemyAlive2 = false;
+                    }
+                    pos = tank.getJSONArray("projectile");
+                    for(int j = 0; j < pos.length(); j++) {
+                        JSONObject missile = pos.getJSONObject(i);
+                        JSONArray position = missile.getJSONArray("position");
+                        Projectile pj = new Projectile(position.getDouble(0), position.getDouble(1), missile.getDouble("direction"));
+                        projectiles.add(pj);
+                    }
+                }
+
+            }
+        } catch (JSONException e) {
+            //e.printStackTrace();
+            //System.out.println("caught json error in updating tanks");
+        }
+    }
+
+    public void dodge1() {
+        if(!alive1)
+            return;
+        double angle;
+        List<Projectile> incoming = new ArrayList<Projectile>();
+        for(Projectile p : projectiles) {
+            angle = Math.atan2(p.y - p1y, p.x - p1x);
+            if(Math.abs(angle-p.dir) < 0.017) {
+                incoming.add(p);
+            }
+        }
+        moveRandom(id1);
+        if(incoming.isEmpty()) {
+            //moveRandom(id1);
+            return;
+        }
+        double diff = Math.abs(track1 - (incoming.get(0).dir+1.57));
+
+        if(diff > 0.1745) {
+            cc.move(id1, "FWD", 5);
+        }
+        else {
+            cc.move(id1, "FWD", 5);
+            cc.rotateTank(id1, "CW", 0.5236);
+            /*if(incoming.get(0).dir > track2) {
+                if(Math.toDegrees(diff) <= 180) {
+                    cc.rotateTank(id2,"CCW", diff);
+                }
+                else {
+                    cc.rotateTank(id2, "CW", (2*Math.PI)-diff);
+                }
+            }
+            else {
+                if(Math.toDegrees(diff) <= 180) {
+                    cc.rotateTank(id2, "CW", diff);
+                }
+                else {
+                    cc.rotateTank(id2, "CCW", (2*Math.PI)-diff);
+                }
+            }*/
+            //moveRandom(id2);
+        }
+    }
+
+    public void dodge2() {
+        if(!alive2)
+            return;
+        double angle;
+        List<Projectile> incoming = new ArrayList<Projectile>();
+        for(Projectile p : projectiles) {
+            angle = Math.atan2(p.y - p2y, p.x - p2x);
+            if(Math.abs(angle-p.dir) < 0.017) {
+                incoming.add(p);
+            }
+        }
+
+        if(incoming.isEmpty()) {
+            //moveRandom(id1);
+            return;
+        }
+        double diff = Math.abs(track2 - (incoming.get(0).dir));
+        if(diff > 0.1745) {
+            cc.move(id2, "REV", 5);
+        }
+        else {
+            cc.move(id2, "REV", 5);
+            cc.rotateTank(id2, "CW", 0.5236);
+            /*if(incoming.get(0).dir > track2) {
+                if(Math.toDegrees(diff) <= 180) {
+                    cc.rotateTank(id2,"CCW", diff);
+                }
+                else {
+                    cc.rotateTank(id2, "CW", (2*Math.PI)-diff);
+                }
+            }
+            else {
+                if(Math.toDegrees(diff) <= 180) {
+                    cc.rotateTank(id2, "CW", diff);
+                }
+                else {
+                    cc.rotateTank(id2, "CCW", (2*Math.PI)-diff);
+                }
+            }*/
+            //moveRandom(id2);
+        }
+
+    }
 }
