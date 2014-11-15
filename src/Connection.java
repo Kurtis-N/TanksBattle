@@ -63,6 +63,7 @@ public class Connection {
         this.matchToken = matchToken;
         this.serverIP = serverIP;
         rand = new Random(7919);
+        //rand = new Random(104729);
 
         //Make one CommandChannel for commands
         //Command issues a connect to the server, then loops forever
@@ -84,6 +85,11 @@ public class Connection {
         //uses TCP, port 5556
         sc = new StateChannel(context, serverIP, matchToken, cc.clientToken);
 
+        //TODO: write aim function that checks for own tanks
+        //TODO: write aim function that checks for barricades / walls
+        //TODO: don't run into walls?
+        //TODO: check current shots & don't move into them
+        //TODO: don't run over other tank
 
         while (true) {
             String gs = sc.getGameState();
@@ -108,22 +114,14 @@ public class Connection {
                 if (resp.getDouble("timeRemaining") < timeRemaining) {
                     timeRemaining = resp.getDouble("timeRemaining");
                     if (alive1) {
-                        cc.fire(id1);
                         cc.rotateTank(id1, "CW", 1.57);
-                        cc.fire(id2);
                         moveRandom(id1);
-                        cc.fire(id1);
-                        aim1();
-                        cc.fire(id2);
+                        aim1Prime();
                     }
                     if (alive2) {
-                        cc.fire(id2);
                         cc.rotateTank(id2, "CCW", 1.57);
-                        cc.fire(id1);
                         moveRandom(id2);
-                        cc.fire(id1);
-                        aim2();
-                        cc.fire(id2);
+                        aim2Prime();
                     }
                     cc.fire(id1);
                     cc.fire(id2);
@@ -135,7 +133,6 @@ public class Connection {
         }
     }
 
-    //put this in a thread that periodically calls it
     public void moveRandom(String id) {
         if(id1 != null && id.equals(id1)) {
             long ct1 = System.nanoTime();
@@ -168,7 +165,7 @@ public class Connection {
         cc.move(id, dir, r);
     }
 
-    //change the aims to whichever is closer or has line of sight
+    //deprecated
     public void aim1() {
         long ct1 = System.nanoTime();
         if(ct1 < pt1)
@@ -221,6 +218,7 @@ public class Connection {
         }
     }
 
+    //deprecated
     public void aim2() {
         long ct2 = System.nanoTime();
         if(ct2 < pt2)
@@ -265,6 +263,124 @@ public class Connection {
                 cc.rotateTurret(id2, "CCW", (2*Math.PI)-diff);
             }
         }
+    }
+
+    //includes check for own player in aiming
+    public void aim1Prime() {
+
+        double d1 = Math.sqrt((p1x-e1x)*(p1x-e1x) + (p1y-e1y)*(p1y-e1y));
+        double d2 = Math.sqrt((p1x-e2x)*(p1x-e2x) + (p1y-e2y)*(p1y-e2y));
+        double d3 = Math.sqrt((p1x-p2x)*(p1x-p2x) + (p1y-p2y)*(p1y-p2y)); //dist to player 3
+
+        double angle;
+        if(d1 <= d2 && enemyAlive1) {
+            angle = Math.atan2(e1y - p1y, e1x - p1x);
+            //if the angles are within 5 rad and our tank is closer
+            if(Math.abs(angle - (Math.atan2(p2y - p1y, p2x - p1x))) < 0.087 && d3 < d1) {
+                return;
+            }
+        }
+        else if(enemyAlive2){
+            angle = Math.atan2(e2y - p1y, e2x - p1x);
+            if(Math.abs(angle - (Math.atan2(p2y - p1y, p2x - p1x))) < 0.087 && d3 < d2) {
+                return;
+            }
+        }
+        else
+            return;
+
+        if(angle < 0)
+            angle += 2*Math.PI;
+        double diff = Math.abs(turret1 - angle);
+        if(diff < 0.01) {
+            cc.stop(id1, "ROTATE_TURRET");
+            return;
+        }
+        pt1 = System.nanoTime();
+
+        if(angle > turret1) {
+            if(Math.toDegrees(diff) <= 180) {
+                //System.out.println("rotate CCW: " + Math.toDegrees(diff));
+                cc.rotateTurret(id1,"CCW", diff);
+                pt1 += (diff/1.5)*150000000;
+            }
+            else {
+                //System.out.println("rotate CW: " + (360 - Math.toDegrees(diff)));
+                cc.rotateTurret(id1, "CW", (2*Math.PI)-diff);
+                pt1 += (diff/(2*Math.PI))*150000000;
+            }
+        }
+        else {
+            if(Math.toDegrees(diff) <= 180) {
+                //System.out.println("rotate CW " + Math.toDegrees(diff));
+                cc.rotateTurret(id1, "CW", diff);
+                pt1 += (diff/1.5)*150000000;
+            }
+            else {
+                //System.out.println("rotate CCW: " + (360 - Math.toDegrees(diff)));
+                cc.rotateTurret(id1, "CCW", (2*Math.PI)-diff);
+                pt1 += (diff/(2*Math.PI))*150000000;
+            }
+        }
+        cc.fire(id1);
+    }
+
+    //includes check for own player in aiming
+    public void aim2Prime() {
+        long ct2 = System.nanoTime();
+        if(ct2 < pt2)
+            return;
+
+        double d1 = Math.sqrt((p2x-e1x)*(p2x-e1x) + (p2y-e1y)*(p2y-e1y));
+        double d2 = Math.sqrt((p2x-e2x)*(p2x-e2x) + (p2y-e2y)*(p2y-e2y));
+        double d3 = Math.sqrt((p2x-p1x)*(p2x-p1x) + (p2y-p1y)*(p2y-p1y));
+        double angle;
+
+        if(d1 <= d2 && enemyAlive1) {
+            angle = Math.atan2(e1y - p2y, e1x - p2x);
+            if(Math.abs(angle - (Math.atan2(p1y - p2y, p1x - p2x))) < 0.087 && d3 < d1) {
+                //System.out.println("not firing");
+                return;
+            }
+        }
+        else if(enemyAlive2){
+            angle = Math.atan2(e2y - p2y, e2x - p2x);
+            if(Math.abs(angle - (Math.atan2(p1y - p2y, p1x - p2x))) < 0.087 && d3 < d2) {
+                //System.out.println("not firing");
+                return;
+            }
+        }
+        else
+            return;
+
+        if(angle < 0)
+            angle += 2*Math.PI;
+        double diff = Math.abs(turret2 - angle);
+        if(diff < 0.01) {
+            cc.stop(id2, "ROTATE_TURRET");
+            return;
+        }
+        if(angle > turret2) {
+            if(Math.toDegrees(diff) <= 180) {
+                //System.out.println("rotate CCW: " + Math.toDegrees(diff));
+                cc.rotateTurret(id2,"CCW", diff);
+            }
+            else {
+                //System.out.println("rotate CW: " + (360 - Math.toDegrees(diff)));
+                cc.rotateTurret(id2, "CW", (2*Math.PI)-diff);
+            }
+        }
+        else {
+            if(Math.toDegrees(diff) <= 180) {
+                //System.out.println("rotate CW " + Math.toDegrees(diff));
+                cc.rotateTurret(id2, "CW", diff);
+            }
+            else {
+                //System.out.println("rotate CCW: " + (360 - Math.toDegrees(diff)));
+                cc.rotateTurret(id2, "CCW", (2*Math.PI)-diff);
+            }
+        }
+        cc.fire(id2);
     }
 
     public void update(String r) {

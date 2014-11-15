@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * Created by kurtisniedling on 2014-11-05.
  */
-public class StateChannel implements Runnable{
+public class StateChannel {
     private ZMQ.Context context;
     private String matchToken;
     private String serverIP;
@@ -45,29 +45,5 @@ public class StateChannel implements Runnable{
         msg = msg.replace(matchToken, "");
         //System.out.println("msg: \n"+msg);
         return msg;
-    }
-
-    public void run() {
-        //check comm_type for:
-        //GAME_START, MATCH_END, GAME_END
-        System.out.println("Starting state thread..");
-        while(true) {
-            byte[] m = channel.recv(0);
-            String msg = new String(m);
-
-            //ignore the matchToken
-            msg = msg.replace(matchToken, "");
-            //System.out.println("msg: \n"+msg);
-
-            if(msg != null || !msg.isEmpty() || !msg.equals("")) {
-               // updateState(msg);
-//                try {
-//                    Thread.sleep(50);
-//                } catch (InterruptedException e) {
-//                    //e.printStackTrace();
-//                }
-            }
-
-        }
     }
 }
